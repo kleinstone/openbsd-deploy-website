@@ -8,6 +8,8 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
+LOG_TIME=$(date '+%Y-%m-%d %H:%M:%S')
+
 # 1. Check for proper arguments
 if [ "$#" -ne 2 ]; then
     echo "Usage: $0 <site_domain> <source_directory>"
@@ -20,7 +22,7 @@ SOURCE_DIR="$2"
 
 # Ensure the script is run as root (needed for permissions and /var/www access)
 if [ "$(id -u)" -ne 0 ]; then
-    echo "Error: This script must be run as root (e.g., using doas)." >&2
+    echo "[$LOG_TIME] ❌ Error: This script must be run as root (e.g., using doas)." >&2
     exit 1
 fi
 
@@ -36,7 +38,7 @@ printf "Deploying %s...\n\n" "${SITE_NAME}"
 
 # 3. Validate source directory exists
 if [ ! -d "$SOURCE_DIR" ]; then
-    echo "Error: Source directory '${SOURCE_DIR}' does not exist."
+    echo "[$LOG_TIME] ❌ Error: Source directory '${SOURCE_DIR}' does not exist."
     exit 1
 fi
 

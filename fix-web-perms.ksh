@@ -14,6 +14,8 @@ WEB_GROUP="${WEB_GROUP:-www}"
 BASE_DIR="${BASE_DIR:-/var/www/htdocs}"
 # ---------------------
 
+LOG_TIME=$(date '+%Y-%m-%d %H:%M:%S')
+
 usage() {
     echo "Usage: $0 [DIRECTORY]"
     echo "Fixes file and directory permissions for web deployments."
@@ -34,14 +36,14 @@ fi
 
 # Ensure the script is run as root
 if [ "$(id -u)" -ne 0 ]; then
-    echo "Error: This script must be run as root." >&2
+    echo "[$LOG_TIME] ❌ Error: This script must be run as root." >&2
     exit 1
 fi
 
 TARGET_DIR="${1:-$BASE_DIR}"
 
 if [ ! -d "$TARGET_DIR" ]; then
-    echo "Error: Directory '$TARGET_DIR' does not exist." >&2
+    echo "[$LOG_TIME] ❌ Error: Directory '$TARGET_DIR' does not exist." >&2
     exit 1
 fi
 
