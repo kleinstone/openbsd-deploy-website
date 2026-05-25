@@ -14,6 +14,8 @@ WEB_GROUP="${WEB_GROUP:-www}"
 BASE_DIR="${BASE_DIR:-/var/www/htdocs}"
 # ---------------------
 
+LOG_TIME=$(date '+%Y-%m-%d %H:%M:%S')
+
 usage() {
     echo "Usage: $0 [DIRECTORY]"
     echo "Fixes file and directory permissions for web deployments."
@@ -34,23 +36,25 @@ fi
 
 # Ensure the script is run as root
 if [ "$(id -u)" -ne 0 ]; then
-    echo "Error: This script must be run as root." >&2
+    echo "[$LOG_TIME] ❌ Error: This script must be run as root." >&2
     exit 1
 fi
 
-echo "Starting permissions fix for web directories..."
-echo "Using User: ${WEB_USER}, Group: ${WEB_GROUP}"
+echo "----------------------------------------------------------------------"
+echo "[$LOG_TIME] 🔒 Starting permissions fix for web directories"
+echo "[$LOG_TIME] 👤 Using User: ${WEB_USER} | 👥 Group: ${WEB_GROUP}"
+echo "----------------------------------------------------------------------"
 
 TARGET_DIR="${1:-$BASE_DIR}"
 
 if [ ! -d "$TARGET_DIR" ]; then
-    echo "Error: Directory '$TARGET_DIR' does not exist." >&2
+    echo "[$LOG_TIME] ❌ Error: Directory '$TARGET_DIR' does not exist." >&2
     exit 1
 fi
 
 fix_permissions() {
     local site_dir="$1"
-    echo "Processing: ${site_dir}"
+    echo "  -> 📁 Processing: ${site_dir}"
 
     # 1. Set ownership
     chown -R "${WEB_USER}:${WEB_GROUP}" "${site_dir}"
@@ -73,7 +77,7 @@ fix_permissions() {
     # Specifically protect common environment/hidden configuration files
     find "${site_dir}" -type f -name ".env*" -exec chmod 640 {} +
 
-    echo "--> Permissions successfully reset for $(basename "${site_dir}")"
+    echo "  -> ✅ Permissions successfully reset for $(basename "${site_dir}")"
 }
 
 if [ -n "$1" ]; then
@@ -93,4 +97,6 @@ else
     done
 fi
 
-echo "All done! Web file permissions are secure."
+echo "----------------------------------------------------------------------"
+echo "[$LOG_TIME] ✨ All done! Web file permissions are secure."
+echo "----------------------------------------------------------------------"
