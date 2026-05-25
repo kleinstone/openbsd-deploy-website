@@ -32,6 +32,8 @@ SYMLINK_PATH="${BASE_DIR}/public"
 TIMESTAMP=$(date +"%Y%m%d%H%M%S")
 NEW_RELEASE_DIR="${RELEASES_DIR}/${TIMESTAMP}"
 
+printf "Deploying %s...\n\n" "${SITE_NAME}"
+
 # 3. Validate source directory exists
 if [ ! -d "$SOURCE_DIR" ]; then
     echo "Error: Source directory '${SOURCE_DIR}' does not exist."
@@ -45,18 +47,19 @@ mkdir -p "${RELEASES_DIR}" "${SHARED_DIR}"
 # If 'public' is still a real directory from your old workflow, we need 
 # to back it up so we can replace it with a symlink.
 if [ -d "${SYMLINK_PATH}" ] && [ ! -L "${SYMLINK_PATH}" ]; then
-    echo "Notice: ${SYMLINK_PATH} is a real directory."
-    echo "Backing it up to 'public_legacy_backup' to transition to atomic symlinks..."
+    printf "Notice:\tBacking up legacy 'public' directory to 'public_legacy_backup'...\n"
     mv "${SYMLINK_PATH}" "${BASE_DIR}/public_legacy_backup"
+    echo ""
 fi
 # -----------------------------------
 
 # 5. Copy new files to the isolated release directory
-echo "Deploying to ${NEW_RELEASE_DIR}..."
+printf "Copying release to %s...\n" "${NEW_RELEASE_DIR}"
 cp -Rf "${SOURCE_DIR}/." "${NEW_RELEASE_DIR}/"
+echo ""
 
 # 5b. Link Shared Resources
-echo "Linking persistent shared resources..."
+printf "Linking shared resources...\n"
 # Add any directories or files here that should persist across deployments.
 # We use relative symlinks (../../) so that OpenBSD's httpd can properly 
 # follow them from inside its /var/www chroot.
@@ -69,14 +72,15 @@ for item in $SHARED_ITEMS; do
         
         # Create a symlink pointing to the shared, persistent version
         ln -s "../../shared/${item}" "${NEW_RELEASE_DIR}/${item}"
-        echo "  -> Linked ${item}"
+        printf "\tLinked:\t%s\n" "${item}"
     else
-        echo "  -> Notice: '${item}' not found in shared/. Skipping symlink."
+        printf "\tSkipped:\t%s (not found)\n" "${item}"
     fi
 done
+echo ""
 
 # 6. Fix permissions BEFORE going live
-echo "Fixing permissions..."
+printf "Fixing permissions...\n"
 # We pass the NEW release directory to your script so visitors don't experience a 
 # window of time where files have the wrong permissions.
 # We also apply it to the shared directory to ensure uploaded/persistent files 
@@ -91,21 +95,25 @@ elif command -v fix-web-perms.ksh >/dev/null 2>&1; then
     fix-web-perms.ksh "${NEW_RELEASE_DIR}"
 else
     # Fallback if your script isn't in the global PATH
-    echo "Warning: fix-web-perms.ksh not found in PATH or ${SCRIPT_DIR}."
+    printf "\tWarning:\tfix-web-perms.ksh not found.\n"
     # Optional: Put fallback chmod/chown commands here
 fi
+echo ""
 
 # 7. The Atomic Switch
-echo "Switching live traffic to the new release..."
+printf "Switching live traffic...\n"
 # The -sfn flags create a soft link, forcefully replacing the old one without dereferencing.
 # We use a relative path here as well so OpenBSD's httpd chroot understands the path.
 ln -sfn "releases/${TIMESTAMP}/public" "${SYMLINK_PATH}"
+echo ""
 
 # 8. Clean up old releases (Keep only the latest 5 to save disk space)
-echo "Cleaning up old releases..."
+printf "Cleaning up old releases...\n"
 OLD_RELEASES=$(ls -dt "${RELEASES_DIR}"/* 2>/dev/null | tail -n +6)
 if [ -n "$OLD_RELEASES" ]; then
     echo "$OLD_RELEASES" | xargs rm -rf
 fi
+echo ""
 
-echo "Successfully deployed ${SITE_NAME}!"
+LOG_TIME=$(date '+%Y-%m-%d %H:%M:%S')
+printf "Successfully deployed %s! [%s]\n" "${SITE_NAME}" "${LOG_TIME}"

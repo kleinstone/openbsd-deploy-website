@@ -38,9 +38,6 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-echo "Starting permissions fix for web directories..."
-echo "Using User: ${WEB_USER}, Group: ${WEB_GROUP}"
-
 TARGET_DIR="${1:-$BASE_DIR}"
 
 if [ ! -d "$TARGET_DIR" ]; then
@@ -50,7 +47,8 @@ fi
 
 fix_permissions() {
     local site_dir="$1"
-    echo "Processing: ${site_dir}"
+    
+    printf "\tSecuring:\t%s (%s:%s)\n" "${site_dir}" "${WEB_USER}" "${WEB_GROUP}"
 
     # 1. Set ownership
     chown -R "${WEB_USER}:${WEB_GROUP}" "${site_dir}"
@@ -73,7 +71,6 @@ fix_permissions() {
     # Specifically protect common environment/hidden configuration files
     find "${site_dir}" -type f -name ".env*" -exec chmod 640 {} +
 
-    echo "--> Permissions successfully reset for $(basename "${site_dir}")"
 }
 
 if [ -n "$1" ]; then
@@ -92,5 +89,3 @@ else
         fi
     done
 fi
-
-echo "All done! Web file permissions are secure."
